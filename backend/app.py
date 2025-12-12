@@ -1,15 +1,25 @@
 import os
+from dotenv import load_dotenv  # <--- 1. WAJIB ADA INI
 from flask import Flask, request, jsonify
-from flask_cors import CORS # type: ignore
+from flask_cors import CORS
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import Base, ReviewResult
 from analyzer import analyze_review
 
+# 2. WAJIB PANGGIL INI SUPAYA BACA FILE .ENV
+load_dotenv()
+
 app = Flask(__name__)
 CORS(app)
 
+# 3. Ambil URL Database
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Cek apakah URL ada isinya
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL tidak ditemukan! Pastikan file .env sudah benar.")
+
 engine = create_engine(DATABASE_URL)
 
 Base.metadata.create_all(engine)
@@ -24,12 +34,15 @@ def analyze_new_review():
         if not review:
             return jsonify({"error": "Review text is required"}), 400
 
+        # Panggil fungsi analisis
         sentiment, key_points = analyze_review(review)
+        
+        # Simpan ke Database
         session = Session()
         new_result = ReviewResult(
             original_review=review,
             sentiment=sentiment,
-            key_points=key_points
+            key_points=key_points  # <--- Pastikan tulisannya lengkap seperti ini
         )
         session.add(new_result)
         session.commit()
@@ -48,7 +61,8 @@ def analyze_new_review():
 def get_all_reviews():
     session = Session()
     try:
-        reviews = session.query(ReviewResult).all()
+        # Urutkan dari yang terbaru (descending by id) biar rapi
+        reviews = session.query(ReviewResult).order_by(ReviewResult.id.desc()).all()
         results = [review.to_dict() for review in reviews]
         return jsonify(results), 200
     except Exception as e:
@@ -58,4 +72,4 @@ def get_all_reviews():
         session.close()
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000) 
+    app.run(debug=True, port=5000)
