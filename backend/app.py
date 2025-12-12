@@ -1,5 +1,5 @@
 import os
-from dotenv import load_dotenv  # <--- 1. WAJIB ADA INI
+from dotenv import load_dotenv  
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sqlalchemy import create_engine
@@ -7,16 +7,14 @@ from sqlalchemy.orm import sessionmaker
 from models import Base, ReviewResult
 from analyzer import analyze_review
 
-# 2. WAJIB PANGGIL INI SUPAYA BACA FILE .ENV
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-# 3. Ambil URL Database
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Cek apakah URL ada isinya
+
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL tidak ditemukan! Pastikan file .env sudah benar.")
 
@@ -42,7 +40,7 @@ def analyze_new_review():
         new_result = ReviewResult(
             original_review=review,
             sentiment=sentiment,
-            key_points=key_points  # <--- Pastikan tulisannya lengkap seperti ini
+            key_points=key_points 
         )
         session.add(new_result)
         session.commit()
@@ -61,7 +59,6 @@ def analyze_new_review():
 def get_all_reviews():
     session = Session()
     try:
-        # Urutkan dari yang terbaru (descending by id) biar rapi
         reviews = session.query(ReviewResult).order_by(ReviewResult.id.desc()).all()
         results = [review.to_dict() for review in reviews]
         return jsonify(results), 200

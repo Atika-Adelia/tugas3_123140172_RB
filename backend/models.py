@@ -9,10 +9,7 @@ class ReviewResult(Base):
     
     id = Column(Integer, primary_key=True)
     original_review = Column(Text, nullable=False)
-    
-    # --- PERBAIKAN 3: Ubah String(50) menjadi Text ---
     sentiment = Column(Text, nullable=False) 
-    
     key_points = Column(Text) 
     timestamp = Column(DateTime, default=datetime.utcnow)
 

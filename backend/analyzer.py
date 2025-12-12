@@ -6,13 +6,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+HF_API_TOKEN = os.getenv("HF_TOKEN")
 
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
-# --- PERBAIKAN 1: URL ROUTER BARU (WAJIB GANTI INI) ---
-HF_API_URL = "https://router.huggingface.co/hf-inference/models/mdhugol/indonesia-bert-sentiment-classification"
-HF_API_TOKEN = os.getenv("HF_TOKEN") 
+HF_API_URL = "https://api-inference.huggingface.co/models/lxyuan/distilbert-base-multilingual-cased-sentiments-student"
 
 def analyze_sentiment(review_text):
     if not HF_API_TOKEN:
@@ -23,26 +22,21 @@ def analyze_sentiment(review_text):
 
     try:
         response = requests.post(HF_API_URL, headers=headers, json=payload)
-        
-        # Jika masih error, kita kembalikan pesan netral agar aplikasi tidak crash
         if response.status_code != 200:
-            print(f"DEBUG HF Error: {response.text}") # Cek terminal untuk detail
-            return "Neutral (API Error)"
+            print(f"DEBUG SENTIMEN ERROR: {response.text}")
+            return "Neutral (API Busy)"
 
         result = response.json()
         
-        # Kadang API mengembalikan list, kadang dict
         if isinstance(result, list) and len(result) > 0:
-            if isinstance(result[0], list):
-                top_result = max(result[0], key=lambda x: x['score'])
-            else:
-                top_result = max(result, key=lambda x: x['score'])
+            scores = result[0] if isinstance(result[0], list) else result
+            top_result = max(scores, key=lambda x: x['score'])
             return top_result['label']
         
         return "Neutral"
     except Exception as e:
         print(f"DEBUG Exception: {str(e)}")
-        return "Neutral (Conn Error)"
+        return "Neutral (Connection Error)"
 
 def extract_key_points(review_text):
     if not GEMINI_API_KEY:
@@ -50,18 +44,33 @@ def extract_key_points(review_text):
         
     prompt = (
         "Dari ulasan produk berikut, identifikasi dan ekstrak 3 poin "
-        "kunci terpenting secara singkat. "
+        "kunci terpenting secara singkat dalam bahasa Indonesia. "
         f"Ulasan: \"{review_text}\""
     )
     
-    try:
-        # --- PERBAIKAN 2: KEMBALI KE GEMINI-PRO (LEBIH STABIL) ---
-        model = genai.GenerativeModel('gemini-pro') 
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        return f"Poin kunci tidak tersedia (Gemini Error: {str(e)[:50]}...)"
+    models_to_try = [
+        'gemini-1.5-flash',      
+        'gemini-1.5-flash-latest',
+        'gemini-pro',            
+        'gemini-1.0-pro'          
+    ]
+
+    last_error = ""
+
+    for model_name in models_to_try:
+        try:
+            print(f"Mencoba model: {model_name}...") 
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            print(f"Gagal pakai {model_name}, mencoba yang lain...")
+            last_error = str(e)
+            continue
+    
+    return f"Gagal semua model. Cek API Key atau koneksi internet."
 
 def analyze_review(review_text):
     sentiment = analyze_sentiment(review_text)
-    key_
+    key_points = extract_key_points(review_text)
+    return sentiment, key_points

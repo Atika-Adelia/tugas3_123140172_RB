@@ -1,114 +1,121 @@
-// src/App.jsx
-import React, { useState, useEffect } from 'react';
-import './App.css'; 
-
-const API_BASE_URL = 'http://127.0.0.1:5000/api'; // Sesuaikan dengan port Flask Anda
+import { useState, useEffect } from 'react'
+import './App.css' 
 
 function App() {
-  const [reviewText, setReviewText] = useState('');
-  const [currentResult, setCurrentResult] = useState(null);
-  const [allReviews, setAllReviews] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [review, setReview] = useState('')
+  const [result, setResult] = useState(null)
+  const [history, setHistory] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const fetchHistory = async () => {
 
-  // Fetch semua review saat komponen dimuat
+    try {
+      const response = await fetch('http://localhost:5000/api/reviews');
+      if (!response.ok) throw new Error('Gagal mengambil riwayat');
+      const data = await response.json();
+      setHistory(data);
+    } catch (err) {
+      console.error("Error fetching history:", err);
+    }
+  };
+
   useEffect(() => {
-    fetchReviews();
+    fetchHistory();
   }, []);
 
-  const fetchReviews = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/reviews`);
-      if (!response.ok) throw new Error('Failed to fetch reviews');
-      const data = await response.json();
-      setAllReviews(data.reverse()); // Tampilkan yang terbaru di atas
-    } catch (err) {
-      setError(`Error fetching: ${err.message}`);
+  const handleAnalyze = async () => {
+    if (!review.trim()) {
+        setError("Mohon masukkan teks ulasan.");
+        return;
     }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setCurrentResult(null);
-    if (!reviewText.trim()) return;
-
-    setIsLoading(true);
+    setLoading(true);
+    setError(null);
+    setResult(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/analyze-review`, {
+      const response = await fetch('http://localhost:5000/api/analyze-review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ review: reviewText }),
+        body: JSON.stringify({ review }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Server responded with an error');
+        throw new Error(data.error || 'Terjadi kesalahan saat analisis');
       }
 
-      const data = await response.json();
-      setCurrentResult(data.result);
-      setReviewText('');
-      fetchReviews(); // Refresh daftar setelah berhasil
+      setResult(data.result);
+      setReview(''); 
+      fetchHistory(); 
     } catch (err) {
-      setError(`Analysis Error: ${err.message}`);
+      setError(err.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
+  }
 
-  return (
-    <div className="container">
-      <h1>Product Review Analyzer 🤖</h1>
-
-      {/* Form Input */}
-      <form onSubmit={handleSubmit} className="review-form">
-        <textarea
-          value={reviewText}
-          onChange={(e) => setReviewText(e.target.value)}
-          placeholder="Masukkan ulasan produk di sini..."
-          rows="5"
-          disabled={isLoading}
-        />
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Menganalisis...' : 'Analisis Ulasan'}
-        </button>
-      </form>
-
-      {/* Error & Loading States */}
-      {error && <p className="error-message">Error: {error}</p>}
-
-      {/* Hasil Analisis Terbaru */}
-      {currentResult && (
-        <div className="current-result">
-          <h2>Hasil Analisis Terbaru</h2>
-          <div className={`sentiment-badge ${currentResult.sentiment.toLowerCase()}`}>
-            Sentimen: {currentResult.sentiment}
-          </div>
-          <p><strong>Poin Kunci:</strong> {currentResult.key_points}</p>
-          <p>Ulasan Asli: <em>"{currentResult.original_review}"</em></p>
+  const ResultCard = ({ data, title }) => (
+    <div className="result-card">
+        {title && <h3>{title}</h3>}
+        <div className="result-item">
+            <span className="label">Sentimen</span>
+            <div className="value">{data.sentiment}</div>
         </div>
-      )}
-
-      {/* Display Semua Hasil */}
-      <div className="results-history">
-        <h2>Riwayat Analisis ({allReviews.length})</h2>
-        {allReviews.length === 0 && !isLoading && <p>Belum ada riwayat analisis.</p>}
-
-        {allReviews.map((item) => (
-          <div key={item.id} className="review-card">
-            <div className={`sentiment-badge ${item.sentiment.toLowerCase()}`}>
-              {item.sentiment}
-            </div>
-            <p><strong>Poin Kunci:</strong> {item.key_points}</p>
-            <p className="original-text">Ulasan Asli: <em>"{item.original_review.substring(0, 100)}..."</em></p>
-            <small>Disimpan: {new Date(item.timestamp).toLocaleString()}</small>
-          </div>
-        ))}
-      </div>
+        <div className="result-item">
+            <span className="label">Poin Kunci</span>
+            <div className="value">{data.key_points}</div>
+        </div>
+        <div className="result-item">
+            <span className="label">Ulasan Asli</span>
+            <div className="value original-review">"{data.original_review}"</div>
+        </div>
+        {data.timestamp && (
+            <small style={{ color: 'var(--text-muted)' }}>
+                Disimpan: {new Date(data.timestamp).toLocaleString()}
+            </small>
+        )}
     </div>
   );
+
+  return (
+    <div className="app-container">
+      <h1>Product Review Analyzer 🤖</h1>
+
+      <div className="input-section">
+        <textarea
+          value={review}
+          onChange={(e) => setReview(e.target.value)}
+          placeholder="Masukkan ulasan produk di sini... Contoh: Barangnya bagus banget, pengiriman cepat!"
+          disabled={loading}
+        />
+        <button 
+            className="analyze-button" 
+            onClick={handleAnalyze} 
+            disabled={loading || !review.trim()}
+        >
+          {loading ? 'Menganalisis...' : 'Analisis Ulasan'}
+        </button>
+      </div>
+
+      {error && <div className="error-message">Error: {error}</div>}
+
+      {result && <ResultCard data={result} title="Hasil Analisis Terbaru" />}
+
+      <h2>Riwayat Analisis ({history.length})</h2>
+      {history.length === 0 ? (
+        <p style={{ color: 'var(--text-muted)', marginTop: '2rem' }}>Belum ada riwayat analisis.</p>
+      ) : (
+        <ul className="history-list">
+          {history.map((item) => (
+            <li key={item.id}>
+              <ResultCard data={item} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 }
 
-export default App;
+export default App
