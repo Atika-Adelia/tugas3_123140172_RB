@@ -10,7 +10,7 @@ class ReviewResult(Base):
     id = Column(Integer, primary_key=True)
     original_review = Column(Text, nullable=False)
     sentiment = Column(String(50), nullable=False)
-    key_points = Column(Text) s
+    key_points = Column(Text) 
     timestamp = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self):
