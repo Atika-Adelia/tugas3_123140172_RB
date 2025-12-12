@@ -8,7 +8,7 @@ load_dotenv()
 
 sentiment_pipeline = pipeline(
     "sentiment-analysis", 
-    model=os.getenv("HF_SENTIMENT_MODEL", "w11wo/indonesian-roberta-sentiment-classifier")
+    model=os.getenv("HF_SENTIMENT_MODEL", "ayame/roberta-base-bahasa-indonesia-sentiment-analysis")
 ) 
 
 # Inisialisasi Gemini
