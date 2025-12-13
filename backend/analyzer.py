@@ -1,11 +1,8 @@
 import os
 import requests
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
 from google import genai
 
-# =======================
-# ENV & CONFIG
-# =======================
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -17,10 +14,8 @@ if not GEMINI_API_KEY:
 if not HF_API_TOKEN:
     raise ValueError("HF_TOKEN tidak ditemukan di .env")
 
-# Init Gemini Client (SDK BARU)
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-# Hugging Face Sentiment Model (router terbaru)
 HF_API_URL = (
     "https://router.huggingface.co/hf-inference/models/"
     "lxyuan/distilbert-base-multilingual-cased-sentiments-student"
@@ -31,9 +26,6 @@ HF_HEADERS = {
     "Content-Type": "application/json",
 }
 
-# =======================
-# SENTIMENT ANALYSIS
-# =======================
 def analyze_sentiment(review_text: str) -> str:
     payload = {"inputs": review_text}
 
@@ -64,9 +56,6 @@ def analyze_sentiment(review_text: str) -> str:
         return "NEUTRAL"
 
     except requests.exceptions.RequestException:
-        # =======================
-        # 🔥 FALLBACK SENTIMENT LOKAL
-        # =======================
         text = review_text.lower()
 
         positive_words = [
@@ -124,9 +113,6 @@ def extract_key_points(review_text: str):
         raise ValueError("Empty Gemini response")
 
     except Exception:
-        # =======================
-        # 🔥 FALLBACK KEY POINT LOKAL
-        # =======================
         text = review_text.lower()
         points = []
 
@@ -144,15 +130,9 @@ def extract_key_points(review_text: str):
 
         return points[:3]
 
-
-# =======================
-# MAIN ANALYZER
-# =======================
 def analyze_review(review_text: str):
     sentiment = analyze_sentiment(review_text)
     key_points_list = extract_key_points(review_text)
-
-    # Ubah list → string bullet
     key_points = "\n".join(f"• {p}" for p in key_points_list)
 
     return sentiment, key_points
