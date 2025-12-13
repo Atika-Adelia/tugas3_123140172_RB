@@ -22,7 +22,7 @@ Aplikasi ini menggabungkan kekuatan Model Bahasa Besar (LLM) dengan backend yang
 
 ## 🖼️ Tampilan Hasil Analisis 
 
-<img src="hasil_analisis.png" alt="Tampilan Hasil analisis width="600"/>
+<img src="hasil_analisis.png" alt="Tampilan hasil_analisis" width="600"/>
 
 ## ⚙️ Persyaratan Sistem
 
