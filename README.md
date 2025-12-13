@@ -18,7 +18,11 @@ Aplikasi ini menggabungkan kekuatan Model Bahasa Besar (LLM) dengan backend yang
 
 ## 🖼️ Tampilan Awal Aplikasi
 
-![Tampilan Antarmuka Aplikasi](https://github.com/01-151-HildiyahMaretasya/PAWTugas3/raw/main/Screen%20Shot%202025-12-13%20at%2020.40.38.png)
+<img src="tampilan_awal.png" alt="Tampilan Aplikasi" width="600"/>
+
+## 🖼️ Tampilan Hasil Analisis 
+
+<img src="hasil_analisis.png" alt="Tampilan Hasil analisis width="600"/>
 
 ## ⚙️ Persyaratan Sistem
 
